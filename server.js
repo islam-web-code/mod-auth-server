@@ -128,7 +128,7 @@ app.post("/admin/remove-hwid", requireAdmin, async (req, res) => {
       return sendError(res, "HWID not found", 404);
     }
 
-    await logAction("REMOVE_HWID", + username + hwid);
+    await logAction("REMOVED_HWID", `${username} (${hwid})`);
 
     res.json({ success: true, message: "Removed" });
   } catch {
@@ -230,6 +230,21 @@ app.get("/admin/logs", requireAdmin, async (req, res) => {
       success: false,
       message: "Fetch failed"
     });
+  }
+});
+
+// clear logs
+
+app.post("/admin/clear-logs", requireAdmin, async (req, res) => {
+  try {
+    await db.query("DELETE FROM admin_logs");
+
+    await logAction("CLEAR_LOGS", "All logs cleared");
+
+    res.json({ success: true, message: "Logs cleared" });
+  } catch (err) {
+    console.error(err);
+    sendError(res, "Failed to clear logs");
   }
 });
 
