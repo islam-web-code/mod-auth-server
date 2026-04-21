@@ -5,13 +5,19 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(express.static('public'));
 
+// =======================
+// HEALTH CHECK
+// =======================
 app.get('/', (req, res) => {
     res.send('Mod auth server is running');
 });
 
-// Check if HWID is allowed
-app.post('/auth/check', (req, res) => {
+// =======================
+// AUTH CHECK
+// =======================
+app.post('/auth/check', async (req, res) => {
     const { hwid } = req.body;
 
     if (!hwid) {
@@ -21,44 +27,50 @@ app.post('/auth/check', (req, res) => {
         });
     }
 
-    db.query(
-    'SELECT * FROM users WHERE hwid = $1',
-    [hwid]
-).then(result => {
-    const row = result.rows[0];
+    try {
+        const result = await db.query(
+            'SELECT * FROM users WHERE hwid = $1',
+            [hwid]
+        );
 
-    if (!row) {
+        const row = result.rows[0];
+
+        if (!row) {
+            return res.json({
+                allowed: false,
+                message: 'HWID not found'
+            });
+        }
+
+        if (row.access_enabled !== 1) {
+            return res.json({
+                allowed: false,
+                message: 'Access revoked'
+            });
+        }
+
+        await db.query(
+            'UPDATE users SET last_seen = NOW() WHERE hwid = $1',
+            [hwid]
+        );
+
         return res.json({
+            allowed: true,
+            message: 'Access granted'
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
             allowed: false,
-            message: 'HWID not found'
+            message: 'Database error'
         });
     }
-
-    if (row.access_enabled !== 1) {
-        return res.json({
-            allowed: false,
-            message: 'Access revoked'
-        });
-    }
-
-    db.query(
-        'UPDATE users SET last_seen = NOW() WHERE hwid = $1',
-        [hwid]
-    );
-
-    return res.json({
-        allowed: true,
-        message: 'Access granted'
-    });
-
-}).catch(err => {
-    return res.status(500).json({
-        allowed: false,
-        message: 'Database error'
-    });
-});
 });
 
+// =======================
+// ADD HWID
+// =======================
 app.post('/admin/add-hwid', async (req, res) => {
     const { hwid } = req.body;
 
@@ -79,14 +91,18 @@ app.post('/admin/add-hwid', async (req, res) => {
             success: true,
             message: 'HWID added successfully'
         });
+
     } catch (err) {
         return res.status(500).json({
             success: false,
-            message: 'Failed to add HWID'
+            message: 'Failed to add HWID (maybe already exists)'
         });
     }
 });
 
+// =======================
+// REVOKE HWID
+// =======================
 app.post('/admin/revoke-hwid', async (req, res) => {
     const { hwid } = req.body;
 
@@ -114,6 +130,7 @@ app.post('/admin/revoke-hwid', async (req, res) => {
             success: true,
             message: 'HWID revoked successfully'
         });
+
     } catch (err) {
         return res.status(500).json({
             success: false,
@@ -122,6 +139,9 @@ app.post('/admin/revoke-hwid', async (req, res) => {
     }
 });
 
+// =======================
+// ENABLE HWID
+// =======================
 app.post('/admin/enable-hwid', async (req, res) => {
     const { hwid } = req.body;
 
@@ -149,6 +169,7 @@ app.post('/admin/enable-hwid', async (req, res) => {
             success: true,
             message: 'HWID enabled successfully'
         });
+
     } catch (err) {
         return res.status(500).json({
             success: false,
@@ -157,6 +178,9 @@ app.post('/admin/enable-hwid', async (req, res) => {
     }
 });
 
+// =======================
+// LIST HWIDS
+// =======================
 app.get('/admin/list-hwids', async (req, res) => {
     try {
         const result = await db.query(
@@ -167,6 +191,7 @@ app.get('/admin/list-hwids', async (req, res) => {
             success: true,
             users: result.rows
         });
+
     } catch (err) {
         return res.status(500).json({
             success: false,
@@ -175,6 +200,9 @@ app.get('/admin/list-hwids', async (req, res) => {
     }
 });
 
+// =======================
+// START SERVER
+// =======================
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
