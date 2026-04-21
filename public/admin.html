@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mod Auth Admin Panel</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -13,14 +14,7 @@
       padding: 20px;
     }
 
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-
-    h1 {
-      margin-bottom: 20px;
-    }
+    .container { max-width: 1100px; margin: 0 auto; }
 
     .card {
       background: #1a1f29;
@@ -37,8 +31,8 @@
       border: 1px solid #3a4354;
       background: #0f1115;
       color: white;
-      box-sizing: border-box;
       margin-bottom: 10px;
+      box-sizing: border-box;
     }
 
     button {
@@ -57,337 +51,261 @@
     .btn-revoke { background: #ef4444; color: white; }
     .btn-remove { background: #f97316; color: white; }
 
-    .status-enabled {
-      color: #22c55e;
-      font-weight: bold;
-    }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 12px; border-bottom: 1px solid #2b3240; }
+    th { background: #141922; text-align: left; }
 
-    .status-revoked {
-      color: #ef4444;
-      font-weight: bold;
-    }
+    .status-enabled { color: #22c55e; font-weight: bold; }
+    .status-revoked { color: #ef4444; font-weight: bold; }
 
-    .message {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 8px;
-      display: none;
-    }
-
-    .message.success {
-      background: #153d2f;
-      color: #8df0c0;
-      display: block;
-    }
-
-    .message.error {
-      background: #4a1f24;
-      color: #ff9aa5;
-      display: block;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-
-    th, td {
-      text-align: left;
-      padding: 12px;
-      border-bottom: 1px solid #2b3240;
-      vertical-align: top;
-    }
-
-    th {
-      background: #141922;
-    }
-
-    code {
-      word-break: break-all;
-      color: #93c5fd;
-      font-size: 11px;
-      opacity: 0.6;
-    }
-
-    .username {
-      font-weight: bold;
-      color: #e2e8f0;
-    }
-
-    .top-bar {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .top-bar input {
-      margin: 0;
-      flex: 1;
-      min-width: 200px;
-    }
-
-    .small {
-      font-size: 12px;
-      opacity: 0.8;
-    }
+    code { color: #93c5fd; font-size: 11px; opacity: 0.7; }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <h1>Mod Auth Admin Panel</h1>
+<div class="container">
 
-    <div id="login">
-      <input id="pw" type="password" placeholder="Admin password" />
-      <button onclick="login()">Login</button>
-    </div>
+  <h1>Mod Auth Admin Panel</h1>
 
-    <div class="card">
-      <h2>Admin Activity</h2>
-      <div class="small">Latest admin actions</div>
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Action</th>
-            <th>Details</th>
-            <th>Time</th>
-          </tr>
-        </thead>
-        <tbody id="logs">
-          <tr>
-            <td colspan="4">Loading...</td>
-          </tr>
-        </tbody>
-      </table>
-      <h2>Add HWID</h2>
-      <div class="top-bar">
-        <input type="text" id="usernameInput" placeholder="Minecraft username..." />
-        <input type="text" id="hwidInput" placeholder="Enter HWID..." />
-        <button class="btn-add" onclick="addHWID()">Add HWID</button>
-        <button class="btn-refresh" onclick="loadHWIDs()">Refresh</button>
-      </div>
-      <div id="message" class="message"></div>
-    </div>
-
-    <div class="card">
-      <h2>Saved HWIDs</h2>
-      <div class="small">Green = enabled, Red = revoked</div>
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Player</th>
-            <th>Status</th>
-            <th>Created</th>
-            <th>Last Seen</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="hwidTableBody">
-          <tr>
-            <td colspan="6">Loading...</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+  <!-- LOGIN -->
+  <div class="card" id="loginBox">
+    <input id="pw" type="password" placeholder="Admin password" />
+    <button onclick="login()">Login</button>
   </div>
 
-  <script>
-    const apiBase = "";
+  <!-- ADD HWID -->
+  <div class="card">
+    <h3>Add HWID</h3>
 
-    async function login() {
-      const password = document.getElementById("pw").value;
+    <input id="usernameInput" placeholder="Username" />
+    <input id="hwidInput" placeholder="HWID" />
 
-      const res = await fetch("/admin/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": localStorage.getItem("admin")
-        },
-        body: JSON.stringify({ password })
-      });
+    <button class="btn-add" onclick="addHWID()">Add</button>
+    <button class="btn-refresh" onclick="loadAll()">Refresh</button>
+  </div>
 
-      if (res.ok) {
-        localStorage.setItem("admin", "admin-token-123");
-        location.reload();
-      } else {
-        alert("Wrong password");
-      }
-    }
+  <!-- LOGS -->
+  <div class="card">
+    <h3>Admin Logs</h3>
 
-    function showMessage(text, type) {
-      const msg = document.getElementById("message");
-      msg.className = "message " + type;
-      msg.textContent = text;
-    }
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Action</th>
+          <th>Details</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody id="logs"></tbody>
+    </table>
+  </div>
 
+  <!-- USERS -->
+  <div class="card">
+    <h3>HWIDs</h3>
 
-    async function loadLogs() {
-      const res = await fetch("/admin/logs", {
-        headers: {
-          Authorization: localStorage.getItem("admin")
-        }
-      });
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>User</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th>Last Seen</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="hwids"></tbody>
+    </table>
+  </div>
 
-      const data = await res.json();
+</div>
 
-      document.getElementById("logs").innerHTML =
-        data.map(l =>
-          `<div>[${l.created_at}] ${l.action} - ${l.details}</div>`
-        ).join("");
-    }
-    
+<script>
+const API = "";
+const TOKEN_KEY = "admin_token";
 
-    async function addHWID() {
-      const hwid = document.getElementById("hwidInput").value.trim();
-      const username = document.getElementById("usernameInput").value.trim();
+/* ======================
+   AUTH HEADER FIX
+====================== */
+function authHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "Authorization": localStorage.getItem(TOKEN_KEY)
+  };
+}
 
-      if (!hwid) {
-        showMessage("HWID is required.", "error");
-        return;
-      }
+function requireLogin() {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) {
+    alert("Please login first");
+    throw new Error("No token");
+  }
+  return token;
+}
 
-      try {
-        const res = await fetch(apiBase + "/admin/add-hwid", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ hwid, username })
-        });
+/* ======================
+   LOGIN
+====================== */
+async function login() {
+  const password = document.getElementById("pw").value;
 
-        const data = await res.json();
+  const res = await fetch("/admin/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password })
+  });
 
-        if (data.success) {
-          showMessage(data.message, "success");
-          document.getElementById("hwidInput").value = "";
-          document.getElementById("usernameInput").value = "";
-          loadHWIDs();
-        } else {
-          showMessage(data.message || "Failed to add HWID.", "error");
-        }
-      } catch (err) {
-        showMessage("Request failed while adding HWID.", "error");
-      }
-    }
-    async function removeHWID(hwid) {
-      if (!confirm("Permanently delete this HWID?")) return;
+  const data = await res.json();
 
-      try {
-        const res = await fetch(apiBase + "/admin/remove-hwid", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ hwid })
-        });
+  if (data.success) {
+    localStorage.setItem(TOKEN_KEY, data.token);
+    document.getElementById("loginBox").style.display = "none";
+    loadAll();
+  } else {
+    alert("Wrong password");
+  }
+}
 
-        const data = await res.json();
+/* ======================
+   LOAD ALL DATA
+====================== */
+async function loadAll() {
+  await loadHWIDs();
+  await loadLogs();
+}
 
-        if (data.success) {
-          showMessage(data.message, "success");
-          loadHWIDs();
-        } else {
-          showMessage(data.message || "Failed to remove HWID.", "error");
-        }
-      } catch (err) {
-        showMessage("Request failed while removing HWID.", "error");
-      }
-    }
+/* ======================
+   LOGS FIXED
+====================== */
+async function loadLogs() {
+  requireLogin();
 
-    async function revokeHWID(hwid) {
-      if (!confirm("Revoke this HWID?")) return;
+  const res = await fetch("/admin/logs", {
+    headers: authHeaders()
+  });
 
-      try {
-        const res = await fetch(apiBase + "/admin/revoke-hwid", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ hwid })
-        });
+  const data = await res.json();
 
-        const data = await res.json();
+  const tbody = document.getElementById("logs");
+  tbody.innerHTML = "";
 
-        if (data.success) {
-          showMessage(data.message, "success");
-          loadHWIDs();
-        } else {
-          showMessage(data.message || "Failed to revoke HWID.", "error");
-        }
-      } catch (err) {
-        showMessage("Request failed while revoking HWID.", "error");
-      }
-    }
+  if (!data.success) return;
 
-    async function enableHWID(hwid) {
-      try {
-        const res = await fetch(apiBase + "/admin/enable-hwid", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ hwid })
-        });
+  data.logs.forEach(l => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${l.id}</td>
+        <td>${l.action}</td>
+        <td>${l.details}</td>
+        <td>${l.created_at}</td>
+      </tr>
+    `;
+  });
+}
 
-        const data = await res.json();
+/* ======================
+   HWIDS FIXED
+====================== */
+async function loadHWIDs() {
+  requireLogin();
 
-        if (data.success) {
-          showMessage(data.message, "success");
-          loadHWIDs();
-        } else {
-          showMessage(data.message || "Failed to enable HWID.", "error");
-        }
-      } catch (err) {
-        showMessage("Request failed while enabling HWID.", "error");
-      }
-    }
+  const res = await fetch("/admin/list-hwids", {
+    headers: authHeaders()
+  });
 
-    async function loadHWIDs() {
-      const tableBody = document.getElementById("hwidTableBody");
-      tableBody.innerHTML = `<tr><td colspan="6">Loading...</td></tr>`;
+  const data = await res.json();
 
-      try {
-        const res = await fetch(apiBase + "/admin/list-hwids");
-        const data = await res.json();
+  const tbody = document.getElementById("hwids");
+  tbody.innerHTML = "";
 
-        if (!data.success) {
-          tableBody.innerHTML = `<tr><td colspan="6">Failed to load HWIDs.</td></tr>`;
-          return;
-        }
+  if (!data.success) return;
 
-        if (!data.users || data.users.length === 0) {
-          tableBody.innerHTML = `<tr><td colspan="6">No HWIDs found.</td></tr>`;
-          return;
-        }
+  data.users.forEach(u => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${u.id}</td>
+        <td>${u.username || "N/A"}<br><code>${u.hwid}</code></td>
+        <td class="${u.access_enabled === 1 ? "status-enabled" : "status-revoked"}">
+          ${u.access_enabled === 1 ? "Enabled" : "Revoked"}
+        </td>
+        <td>${u.created_at || ""}</td>
+        <td>${u.last_seen || ""}</td>
+        <td>
+          <button onclick="enableHWID('${u.hwid}')">Enable</button>
+          <button onclick="revokeHWID('${u.hwid}')">Revoke</button>
+          <button onclick="removeHWID('${u.hwid}')">Remove</button>
+        </td>
+      </tr>
+    `;
+  });
+}
 
-        tableBody.innerHTML = data.users.map(user => `
-          <tr>
-            <td>${user.id}</td>
-            <td>
-              <span class="username">${user.username || '(no username)'}</span><br>
-              <code>${user.hwid}</code>
-            </td>
-            <td class="${user.access_enabled === 1 ? 'status-enabled' : 'status-revoked'}">
-              ${user.access_enabled === 1 ? 'Enabled' : 'Revoked'}
-            </td>
-            <td>${user.created_at || ''}</td>
-            <td>${user.last_seen || ''}</td>
-            <td>
-              <button class="btn-enable" onclick="enableHWID('${user.hwid}')">Enable</button>
-              <button class="btn-revoke" onclick="revokeHWID('${user.hwid}')">Revoke</button>
-              <button class="btn-remove" onclick="removeHWID('${user.hwid}')">Remove</button>
-            </td>
-          </tr>
-        `).join("");
-      } catch (err) {
-        tableBody.innerHTML = `<tr><td colspan="6">Request failed.</td></tr>`;
-      }
-    }
+/* ======================
+   ACTIONS FIXED
+====================== */
+async function addHWID() {
+  requireLogin();
 
-    loadHWIDs();
-  </script>
+  const hwid = document.getElementById("hwidInput").value;
+  const username = document.getElementById("usernameInput").value;
+
+  const res = await fetch("/admin/add-hwid", {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ hwid, username })
+  });
+
+  const data = await res.json();
+  alert(data.message);
+  loadHWIDs();
+}
+
+async function removeHWID(hwid) {
+  requireLogin();
+
+  await fetch("/admin/remove-hwid", {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ hwid })
+  });
+
+  loadHWIDs();
+}
+
+async function revokeHWID(hwid) {
+  requireLogin();
+
+  await fetch("/admin/revoke-hwid", {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ hwid })
+  });
+
+  loadHWIDs();
+}
+
+async function enableHWID(hwid) {
+  requireLogin();
+
+  await fetch("/admin/enable-hwid", {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ hwid })
+  });
+
+  loadHWIDs();
+}
+
+/* ======================
+   AUTO LOAD IF LOGGED IN
+====================== */
+if (localStorage.getItem(TOKEN_KEY)) {
+  document.getElementById("loginBox").style.display = "none";
+  loadAll();
+}
+</script>
+
 </body>
 </html>
