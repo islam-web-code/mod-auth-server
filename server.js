@@ -72,7 +72,7 @@ app.post('/auth/check', async (req, res) => {
 // ADD HWID
 // =======================
 app.post('/admin/add-hwid', async (req, res) => {
-    const { hwid } = req.body;
+    const { hwid, username } = req.body;
 
     if (!hwid) {
         return res.status(400).json({
@@ -83,8 +83,8 @@ app.post('/admin/add-hwid', async (req, res) => {
 
     try {
         await db.query(
-            'INSERT INTO users (hwid) VALUES ($1)',
-            [hwid]
+            'INSERT INTO users (hwid, username) VALUES ($1, $2)',
+            [hwid, username || null]
         );
 
         return res.json({
@@ -184,7 +184,7 @@ app.post('/admin/enable-hwid', async (req, res) => {
 app.get('/admin/list-hwids', async (req, res) => {
     try {
         const result = await db.query(
-            'SELECT id, hwid, access_enabled, created_at, last_seen FROM users ORDER BY id DESC'
+            'SELECT id, hwid, username, access_enabled, created_at, last_seen FROM users ORDER BY id DESC'
         );
 
         return res.json({
