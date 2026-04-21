@@ -138,7 +138,29 @@
   <div class="container">
     <h1>Mod Auth Admin Panel</h1>
 
+    <div id="login">
+      <input id="pw" type="password" placeholder="Admin password" />
+      <button onclick="login()">Login</button>
+    </div>
+
     <div class="card">
+      <h2>Admin Activity</h2>
+      <div class="small">Latest admin actions</div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Action</th>
+            <th>Details</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="logs">
+          <tr>
+            <td colspan="4">Loading...</td>
+          </tr>
+        </tbody>
+      </table>
       <h2>Add HWID</h2>
       <div class="top-bar">
         <input type="text" id="usernameInput" placeholder="Minecraft username..." />
@@ -175,11 +197,48 @@
   <script>
     const apiBase = "";
 
+    async function login() {
+      const password = document.getElementById("pw").value;
+
+      const res = await fetch("/admin/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": localStorage.getItem("admin")
+        },
+        body: JSON.stringify({ password })
+      });
+
+      if (res.ok) {
+        localStorage.setItem("admin", "admin-token-123");
+        location.reload();
+      } else {
+        alert("Wrong password");
+      }
+    }
+
     function showMessage(text, type) {
       const msg = document.getElementById("message");
       msg.className = "message " + type;
       msg.textContent = text;
     }
+
+
+    async function loadLogs() {
+      const res = await fetch("/admin/logs", {
+        headers: {
+          Authorization: localStorage.getItem("admin")
+        }
+      });
+
+      const data = await res.json();
+
+      document.getElementById("logs").innerHTML =
+        data.map(l =>
+          `<div>[${l.created_at}] ${l.action} - ${l.details}</div>`
+        ).join("");
+    }
+    
 
     async function addHWID() {
       const hwid = document.getElementById("hwidInput").value.trim();

@@ -7,6 +7,9 @@ const pool = new Pool({
     }
 });
 
+// =======================
+// USERS TABLE
+// =======================
 pool.query(`
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -28,6 +31,22 @@ pool.query(`
     console.log('Username column ready');
 }).catch(err => {
     console.error('Error adding username column:', err);
+});
+
+// =======================
+// ADMIN LOGS TABLE
+// =======================
+pool.query(`
+    CREATE TABLE IF NOT EXISTS admin_logs (
+        id SERIAL PRIMARY KEY,
+        action TEXT,
+        details TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+    )
+`).then(() => {
+    console.log('Admin logs table ready');
+}).catch(err => {
+    console.error('Error creating admin_logs table:', err);
 });
 
 module.exports = pool;
