@@ -59,7 +59,7 @@ app.post('/auth/check', (req, res) => {
 });
 });
 
-app.post('/admin/add-hwid', (req, res) => {
+app.post('/admin/add-hwid', async (req, res) => {
     const { hwid } = req.body;
 
     if (!hwid) {
@@ -69,23 +69,22 @@ app.post('/admin/add-hwid', (req, res) => {
         });
     }
 
-    db.run(
-        'INSERT INTO users (hwid) VALUES (?)',
-        [hwid],
-        function (err) {
-            if (err) {
-                return res.status(500).json({
-                    success: false,
-                    message: 'Failed to add HWID'
-                });
-            }
+    try {
+        await db.query(
+            'INSERT INTO users (hwid) VALUES ($1)',
+            [hwid]
+        );
 
-            return res.json({
-                success: true,
-                message: 'HWID added successfully'
-            });
-        }
-    );
+        return res.json({
+            success: true,
+            message: 'HWID added successfully'
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to add HWID'
+        });
+    }
 });
 
 app.post('/admin/revoke-hwid', (req, res) => {
