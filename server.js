@@ -128,7 +128,7 @@ app.post("/admin/remove-hwid", requireAdmin, async (req, res) => {
       return sendError(res, "HWID not found", 404);
     }
 
-    await logAction("REMOVE_HWID", hwid);
+    await logAction("REMOVE_HWID", + username + hwid);
 
     res.json({ success: true, message: "Removed" });
   } catch {
