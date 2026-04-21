@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mod Auth Admin Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f1115;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: #1a1f29;
+      border: 1px solid #2b3240;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #3a4354;
+      background: #0f1115;
+      color: white;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-right: 8px;
+      margin-top: 6px;
+      font-weight: bold;
+    }
+
+    .btn-add { background: #2e8b57; color: white; }
+    .btn-refresh { background: #3b82f6; color: white; }
+    .btn-enable { background: #22c55e; color: white; }
+    .btn-revoke { background: #ef4444; color: white; }
+
+    .status-enabled {
+      color: #22c55e;
+      font-weight: bold;
+    }
+
+    .status-revoked {
+      color: #ef4444;
+      font-weight: bold;
+    }
+
+    .message {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .message.success {
+      background: #153d2f;
+      color: #8df0c0;
+      display: block;
+    }
+
+    .message.error {
+      background: #4a1f24;
+      color: #ff9aa5;
+      display: block;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid #2b3240;
+      vertical-align: top;
+    }
+
+    th {
+      background: #141922;
+    }
+
+    code {
+      word-break: break-all;
+      color: #93c5fd;
+    }
+
+    .top-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .top-bar input {
+      margin: 0;
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .small {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Mod Auth Admin Panel</h1>
+
+    <div class="card">
+      <h2>Add HWID</h2>
+      <div class="top-bar">
+        <input type="text" id="hwidInput" placeholder="Enter HWID..." />
+        <button class="btn-add" onclick="addHWID()">Add HWID</button>
+        <button class="btn-refresh" onclick="loadHWIDs()">Refresh</button>
+      </div>
+      <div id="message" class="message"></div>
+    </div>
+
+    <div class="card">
+      <h2>Saved HWIDs</h2>
+      <div class="small">Green = enabled, Red = revoked</div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>HWID</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Last Seen</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="hwidTableBody">
+          <tr>
+            <td colspan="6">Loading...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const apiBase = "";
+
+    function showMessage(text, type) {
+      const msg = document.getElementById("message");
+      msg.className = "message " + type;
+      msg.textContent = text;
+    }
+
+    async function addHWID() {
+      const hwid = document.getElementById("hwidInput").value.trim();
+
+      if (!hwid) {
+        showMessage("HWID is required.", "error");
+        return;
+      }
+
+      try {
+        const res = await fetch(apiBase + "/admin/add-hwid", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ hwid })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showMessage(data.message, "success");
+          document.getElementById("hwidInput").value = "";
+          loadHWIDs();
+        } else {
+          showMessage(data.message || "Failed to add HWID.", "error");
+        }
+      } catch (err) {
+        showMessage("Request failed while adding HWID.", "error");
+      }
+    }
+
+    async function revokeHWID(hwid) {
+      if (!confirm("Revoke this HWID?")) return;
+
+      try {
+        const res = await fetch(apiBase + "/admin/revoke-hwid", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ hwid })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showMessage(data.message, "success");
+          loadHWIDs();
+        } else {
+          showMessage(data.message || "Failed to revoke HWID.", "error");
+        }
+      } catch (err) {
+        showMessage("Request failed while revoking HWID.", "error");
+      }
+    }
+
+    async function enableHWID(hwid) {
+      try {
+        const res = await fetch(apiBase + "/admin/enable-hwid", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ hwid })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showMessage(data.message, "success");
+          loadHWIDs();
+        } else {
+          showMessage(data.message || "Failed to enable HWID.", "error");
+        }
+      } catch (err) {
+        showMessage("Request failed while enabling HWID.", "error");
+      }
+    }
+
+    async function loadHWIDs() {
+      const tableBody = document.getElementById("hwidTableBody");
+      tableBody.innerHTML = `<tr><td colspan="6">Loading...</td></tr>`;
+
+      try {
+        const res = await fetch(apiBase + "/admin/list-hwids");
+        const data = await res.json();
+
+        if (!data.success) {
+          tableBody.innerHTML = `<tr><td colspan="6">Failed to load HWIDs.</td></tr>`;
+          return;
+        }
+
+        if (!data.users || data.users.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="6">No HWIDs found.</td></tr>`;
+          return;
+        }
+
+        tableBody.innerHTML = data.users.map(user => `
+          <tr>
+            <td>${user.id}</td>
+            <td><code>${user.hwid}</code></td>
+            <td class="${user.access_enabled === 1 ? 'status-enabled' : 'status-revoked'}">
+              ${user.access_enabled === 1 ? 'Enabled' : 'Revoked'}
+            </td>
+            <td>${user.created_at || ''}</td>
+            <td>${user.last_seen || ''}</td>
+            <td>
+              <button class="btn-enable" onclick="enableHWID('${user.hwid}')">Enable</button>
+              <button class="btn-revoke" onclick="revokeHWID('${user.hwid}')">Revoke</button>
+            </td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        tableBody.innerHTML = `<tr><td colspan="6">Request failed.</td></tr>`;
+      }
+    }
+
+    loadHWIDs();
+  </script>
+</body>
+</html>
