@@ -55,6 +55,7 @@
     .btn-refresh { background: #3b82f6; color: white; }
     .btn-enable { background: #22c55e; color: white; }
     .btn-revoke { background: #ef4444; color: white; }
+    .btn-remove { background: #f97316; color: white; }
 
     .status-enabled {
       color: #22c55e;
@@ -212,6 +213,30 @@
         showMessage("Request failed while adding HWID.", "error");
       }
     }
+    async function removeHWID(hwid) {
+      if (!confirm("Permanently delete this HWID?")) return;
+
+      try {
+        const res = await fetch(apiBase + "/admin/remove-hwid", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ hwid })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showMessage(data.message, "success");
+          loadHWIDs();
+        } else {
+          showMessage(data.message || "Failed to remove HWID.", "error");
+        }
+      } catch (err) {
+        showMessage("Request failed while removing HWID.", "error");
+      }
+    }
 
     async function revokeHWID(hwid) {
       if (!confirm("Revoke this HWID?")) return;
@@ -294,6 +319,7 @@
             <td>
               <button class="btn-enable" onclick="enableHWID('${user.hwid}')">Enable</button>
               <button class="btn-revoke" onclick="revokeHWID('${user.hwid}')">Revoke</button>
+              <button class="btn-remove" onclick="removeHWID('${user.hwid}')">Remove</button>
             </td>
           </tr>
         `).join("");

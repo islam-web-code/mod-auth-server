@@ -100,6 +100,43 @@ app.post('/admin/add-hwid', async (req, res) => {
     }
 });
 
+// REMOVE HWID
+app.post('/admin/remove-hwid', async (req, res) => {
+    const { hwid } = req.body;
+
+    if (!hwid) {
+        return res.status(400).json({
+            success: false,
+            message: 'HWID is required'
+        });
+    }
+
+    try {
+        const result = await db.query(
+            'DELETE FROM users WHERE hwid = $1',
+            [hwid]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'HWID not found'
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: 'HWID removed successfully'
+        });
+
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to remove HWID'
+        });
+    }
+});
+
 // =======================
 // REVOKE HWID
 // =======================
