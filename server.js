@@ -114,11 +114,19 @@ app.post("/admin/add-hwid", requireAdmin, async (req, res) => {
 });
 
 app.post("/admin/remove-hwid", requireAdmin, async (req, res) => {
-
   const { hwid } = req.body;
   if (!hwid) return sendError(res, "HWID required", 400);
 
   try {
+    // 1. get username BEFORE deleting
+    const userRes = await db.query(
+      "SELECT username FROM users WHERE hwid = $1",
+      [hwid]
+    );
+
+    const username = userRes.rows[0]?.username || "unknown";
+
+    // 2. delete user
     const result = await db.query(
       "DELETE FROM users WHERE hwid = $1",
       [hwid]
@@ -128,10 +136,13 @@ app.post("/admin/remove-hwid", requireAdmin, async (req, res) => {
       return sendError(res, "HWID not found", 404);
     }
 
-    await logAction("REMOVED_HWID", `${username} (${hwid})`);
+    // 3. log correctly (CONSISTENT NAME)
+    await logAction("REMOVE_HWID", `${username} (${hwid})`);
 
     res.json({ success: true, message: "Removed" });
-  } catch {
+
+  } catch (err) {
+    console.error(err);
     sendError(res, "Delete failed");
   }
 });
