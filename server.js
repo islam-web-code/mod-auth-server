@@ -21,42 +21,42 @@ app.post('/auth/check', (req, res) => {
         });
     }
 
-    db.get(
-        'SELECT * FROM users WHERE hwid = ?',
-        [hwid],
-        (err, row) => {
-            if (err) {
-                return res.status(500).json({
-                    allowed: false,
-                    message: 'Database error'
-                });
-            }
+    db.query(
+    'SELECT * FROM users WHERE hwid = $1',
+    [hwid]
+).then(result => {
+    const row = result.rows[0];
 
-            if (!row) {
-                return res.json({
-                    allowed: false,
-                    message: 'HWID not found'
-                });
-            }
+    if (!row) {
+        return res.json({
+            allowed: false,
+            message: 'HWID not found'
+        });
+    }
 
-            if (row.access_enabled !== 1) {
-                return res.json({
-                    allowed: false,
-                    message: 'Access revoked'
-                });
-            }
+    if (row.access_enabled !== 1) {
+        return res.json({
+            allowed: false,
+            message: 'Access revoked'
+        });
+    }
 
-            db.run(
-                'UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE hwid = ?',
-                [hwid]
-            );
-
-            return res.json({
-                allowed: true,
-                message: 'Access granted'
-            });
-        }
+    db.query(
+        'UPDATE users SET last_seen = NOW() WHERE hwid = $1',
+        [hwid]
     );
+
+    return res.json({
+        allowed: true,
+        message: 'Access granted'
+    });
+
+}).catch(err => {
+    return res.status(500).json({
+        allowed: false,
+        message: 'Database error'
+    });
+});
 });
 
 app.post('/admin/add-hwid', (req, res) => {
