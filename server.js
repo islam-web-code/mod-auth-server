@@ -122,7 +122,7 @@ app.post('/admin/revoke-hwid', async (req, res) => {
     }
 });
 
-app.post('/admin/enable-hwid', (req, res) => {
+app.post('/admin/enable-hwid', async (req, res) => {
     const { hwid } = req.body;
 
     if (!hwid) {
@@ -132,50 +132,47 @@ app.post('/admin/enable-hwid', (req, res) => {
         });
     }
 
-    db.run(
-        'UPDATE users SET access_enabled = 1 WHERE hwid = ?',
-        [hwid],
-        function (err) {
-            if (err) {
-                return res.status(500).json({
-                    success: false,
-                    message: 'Failed to enable HWID'
-                });
-            }
+    try {
+        const result = await db.query(
+            'UPDATE users SET access_enabled = 1 WHERE hwid = $1',
+            [hwid]
+        );
 
-            if (this.changes === 0) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'HWID not found'
-                });
-            }
-
-            return res.json({
-                success: true,
-                message: 'HWID enabled successfully'
+        if (result.rowCount === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'HWID not found'
             });
         }
-    );
+
+        return res.json({
+            success: true,
+            message: 'HWID enabled successfully'
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to enable HWID'
+        });
+    }
 });
 
-app.get('/admin/list-hwids', (req, res) => {
-    db.all(
-        'SELECT id, hwid, access_enabled, created_at, last_seen FROM users ORDER BY id DESC',
-        [],
-        (err, rows) => {
-            if (err) {
-                return res.status(500).json({
-                    success: false,
-                    message: 'Failed to fetch HWIDs'
-                });
-            }
+app.get('/admin/list-hwids', async (req, res) => {
+    try {
+        const result = await db.query(
+            'SELECT id, hwid, access_enabled, created_at, last_seen FROM users ORDER BY id DESC'
+        );
 
-            return res.json({
-                success: true,
-                users: rows
-            });
-        }
-    );
+        return res.json({
+            success: true,
+            users: result.rows
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch HWIDs'
+        });
+    }
 });
 
 app.listen(PORT, () => {
