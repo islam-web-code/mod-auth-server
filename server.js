@@ -72,7 +72,7 @@ app.post("/auth/check", async (req, res) => {
       return res.json({ allowed: false, message: "HWID not found" });
     }
 
-    if (user.access_enabled !== 1) {
+    if (!user.access_enabled) {
       return res.json({ allowed: false, message: "Access revoked" });
     }
 
