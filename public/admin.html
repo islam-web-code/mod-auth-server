@@ -219,23 +219,22 @@ async function loadOnline() {
 
   if (!data.success) return;
 
-  data.users.forEach(u => {
-  const isOnline = u.status === "Online";
+  data.online.forEach(u => {
+    const isOnline = u.status === "Online";
 
-  tbody.innerHTML += `
-    <tr>
-      <td>${u.username || "unknown"}</td>
+    tbody.innerHTML += `
+      <tr>
+        <td>${u.username || "unknown"}</td>
 
-      <td style="color:${isOnline ? "#22c55e" : "#ef4444"}; font-weight:bold;">
-        ${u.status}
-      </td>
+        <td style="color:${isOnline ? "#22c55e" : "#ef4444"}; font-weight:bold;">
+          ${u.status}
+        </td>
 
-      <td>${u.last_seen || "never"}</td>
-    </tr>
-  `;
-});
+        <td>${u.last_seen || "never"}</td>
+      </tr>
+    `;
+  });
 }
-
 async function login() {
   const password = document.getElementById("pw").value;
 
@@ -408,6 +407,11 @@ setInterval(() => {
     loadOnline();
   }
 }, 3000);
+
+// IMPORTANT: initial load
+if (localStorage.getItem(TOKEN_KEY)) {
+  loadOnline();
+}
 
 /* ======================
    AUTO LOAD IF LOGGED IN
