@@ -329,8 +329,7 @@ async function loadHWIDs() {
   data.users.forEach(u => {
     tbody.innerHTML += `
       <tr>
-        <td>${u.id}</td>
-        <td>${u.username || "N/A"}<br><code>${u.hwid}</code></td>
+        <td>${u.username || "N/A"}<br></td>
         <td class="${u.access_enabled === 1 ? "status-enabled" : "status-revoked"}">
           ${u.access_enabled === 1 ? "Enabled" : "Revoked"}
         </td>
