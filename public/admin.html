@@ -231,10 +231,8 @@ async function loadOnline() {
 
   data.users.forEach(u => {
 
-    // ONLINE LOGIC (based on last_seen)
-    const isOnline =
-      u.last_seen &&
-      (Date.now() - timeAgo(u.last_seen) < 20000);
+    const lastSeen = u.last_seen ? new Date(u.last_seen).getTime() : 0;
+    const isOnline = lastSeen && (Date.now() - lastSeen < 20000);
 
     tbody.innerHTML += `
       <tr>
@@ -244,7 +242,7 @@ async function loadOnline() {
           ${isOnline ? "Online" : "Offline"}
         </td>
 
-        <td>${u.last_seen ?  timeAgo(u.last_seen) : "never"}</td>
+        <td>${u.last_seen ? timeAgo(u.last_seen) : "never"}</td>
       </tr>
     `;
   });
