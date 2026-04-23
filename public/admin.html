@@ -201,14 +201,27 @@ function requireLogin() {
   return token;
 }
 
-function timeAgo(date) {
-  const diff = Date.now() - new Date(date).getTime();
-  const sec = Math.floor(diff / 1000);
+function formatTime(value) {
+  if (!value) return "never";
 
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return "invalid";
+
+  return date.toLocaleString(); // clean readable format
+}
+
+function timeAgo(value) {
+  if (!value) return "never";
+
+  const date = new Date(value);
+  const diff = Date.now() - date.getTime();
+
+  const sec = Math.floor(diff / 1000);
   if (sec < 10) return "just now";
   if (sec < 60) return sec + "s ago";
   if (sec < 3600) return Math.floor(sec / 60) + "m ago";
-  return Math.floor(sec / 3600) + "h ago";
+  if (sec < 86400) return Math.floor(sec / 3600) + "h ago";
+  return Math.floor(sec / 86400) + "d ago";
 }
 
 /* ======================
@@ -223,16 +236,16 @@ async function loadOnline() {
   });
 
   const data = await res.json();
-
   const tbody = document.getElementById("online");
   tbody.innerHTML = "";
 
   if (!data.success) return;
 
   data.users.forEach(u => {
+    const lastSeenTime = u.last_seen ? new Date(u.last_seen).getTime() : null;
 
-    const lastSeen = u.last_seen ? new Date(u.last_seen).getTime() : 0;
-    const isOnline = lastSeen && (Date.now() - lastSeen < 20000);
+    const isOnline =
+      lastSeenTime && (Date.now() - lastSeenTime < 20000);
 
     tbody.innerHTML += `
       <tr>
@@ -242,7 +255,7 @@ async function loadOnline() {
           ${isOnline ? "Online" : "Offline"}
         </td>
 
-        <td>${u.last_seen ? new Date(u.last_seen).getTime() : "never"}</td>
+        <td>${timeAgo(u.last_seen)}</td>
       </tr>
     `;
   });
@@ -299,7 +312,7 @@ async function loadLogs() {
         <td>${l.id}</td>
         <td>${l.action}</td>
         <td>${l.details}</td>
-        <td>${l.created_at}</td>
+        <td>${formatTime(l.created_at)}</td>
       </tr>
     `;
   });
@@ -349,8 +362,8 @@ async function loadHWIDs() {
     ${u.access_enabled === 1 ? "Enabled" : "Revoked"}
   </td>
 
-  <td>${u.created_at || ""}</td>
-  <td>${u.last_seen || ""}</td>
+  <td>${formatTime(u.created_at)}</td>
+<td>${timeAgo(u.last_seen)}</td>
 
   <td>
     <button onclick="enableHWID('${u.hwid}')">Enable</button>
