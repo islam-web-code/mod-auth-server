@@ -232,6 +232,7 @@ app.get("/admin/list-hwids", requireAdmin, async (req, res) => {
       return {
         id: u.id,
         username: u.username,
+        hwid: u.hwid,
         status: isOnline ? "Online" : "Offline",
         access_enabled: u.access_enabled,
         created_at: u.created_at,

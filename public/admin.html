@@ -342,18 +342,22 @@ async function loadHWIDs() {
   data.users.forEach(u => {
     tbody.innerHTML += `
       <tr>
-        <td>${u.username || "N/A"}<br></td>
-        <td class="${u.access_enabled === 1 ? "status-enabled" : "status-revoked"}">
-          ${u.access_enabled === 1 ? "Enabled" : "Revoked"}
-        </td>
-        <td>${u.created_at || ""}</td>
-        <td>${u.last_seen || ""}</td>
-        <td>
-          <button onclick="enableHWID('${u.hwid}')">Enable</button>
-          <button onclick="revokeHWID('${u.hwid}')">Revoke</button>
-          <button onclick="removeHWID('${u.hwid}')">Remove</button>
-        </td>
-      </tr>
+  <td>${u.id}</td>
+  <td>${u.username || "N/A"}</td>
+
+  <td class="${u.access_enabled === 1 ? "status-enabled" : "status-revoked"}">
+    ${u.access_enabled === 1 ? "Enabled" : "Revoked"}
+  </td>
+
+  <td>${u.created_at || ""}</td>
+  <td>${u.last_seen || ""}</td>
+
+  <td>
+    <button onclick="enableHWID('${u.hwid}')">Enable</button>
+    <button onclick="revokeHWID('${u.hwid}')">Revoke</button>
+    <button onclick="removeHWID('${u.hwid}')">Remove</button>
+  </td>
+</tr>
     `;
   });
 }
