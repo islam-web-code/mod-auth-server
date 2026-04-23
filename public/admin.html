@@ -159,7 +159,7 @@
   <div class="sidebar">
 
     <div class="card">
-      <h3>Online Users</h3>
+      <h3>Users</h3>
       <button class="btn-refresh" onclick="loadOnline()">Refresh</button>
 
       <table>
@@ -201,6 +201,16 @@ function requireLogin() {
   return token;
 }
 
+function timeAgo(date) {
+  const diff = Date.now() - new Date(date).getTime();
+  const sec = Math.floor(diff / 1000);
+
+  if (sec < 10) return "just now";
+  if (sec < 60) return sec + "s ago";
+  if (sec < 3600) return Math.floor(sec / 60) + "m ago";
+  return Math.floor(sec / 3600) + "h ago";
+}
+
 /* ======================
    LOGIN
 ====================== */
@@ -208,7 +218,7 @@ function requireLogin() {
 async function loadOnline() {
   requireLogin();
 
-  const res = await fetch("/admin/online-users", {
+  const res = await fetch("/admin/list-hwids", {
     headers: authHeaders()
   });
 
@@ -219,22 +229,27 @@ async function loadOnline() {
 
   if (!data.success) return;
 
-  data.online.forEach(u => {
-    const isOnline = u.status === "Online";
+  data.users.forEach(u => {
+
+    // ONLINE LOGIC (based on last_seen)
+    const isOnline =
+      u.last_seen &&
+      (Date.now() - timeAgo(u.last_seen) < 20000);
 
     tbody.innerHTML += `
       <tr>
         <td>${u.username || "unknown"}</td>
 
         <td style="color:${isOnline ? "#22c55e" : "#ef4444"}; font-weight:bold;">
-          ${u.status}
+          ${isOnline ? "Online" : "Offline"}
         </td>
 
-        <td>${u.last_seen || "never"}</td>
+        <td>${u.last_seen ?  timeAgo(u.last_seen) : "never"}</td>
       </tr>
     `;
   });
 }
+
 async function login() {
   const password = document.getElementById("pw").value;
 
