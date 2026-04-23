@@ -242,7 +242,7 @@ async function loadOnline() {
           ${isOnline ? "Online" : "Offline"}
         </td>
 
-        <td>${u.last_seen ? timeAgo(u.last_seen) : "never"}</td>
+        <td>${u.last_seen ? new Date(u.last_seen).getTime() : "never"}</td>
       </tr>
     `;
   });
