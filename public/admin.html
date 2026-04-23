@@ -59,65 +59,121 @@
     .status-revoked { color: #ef4444; font-weight: bold; }
 
     code { color: #93c5fd; font-size: 11px; opacity: 0.7; }
+    .layout {
+  display: flex;
+  gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  align-items: flex-start;
+}
+
+/* LEFT SIDE (main content) */
+.main {
+  flex: 3;
+}
+
+/* RIGHT SIDE (online panel) */
+.sidebar {
+  flex: 1;
+  position: sticky;
+  top: 20px;
+  height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+
+/* make online table compact */
+.sidebar table {
+  font-size: 12px;
+}
+
+.sidebar th,
+.sidebar td {
+  padding: 8px;
+}
   </style>
 </head>
 
 <body>
-<div class="container">
+<div class="layout">
 
-  <h1>Mod Auth Admin Panel</h1>
+  <!-- LEFT SIDE -->
+  <div class="main">
 
-  <!-- LOGIN -->
-  <div class="card" id="loginBox">
-    <input id="pw" type="password" placeholder="Admin password" />
-    <button onclick="login()">Login</button>
+    <h1>Mod Auth Admin Panel</h1>
+
+    <!-- LOGIN -->
+    <div class="card" id="loginBox">
+      <input id="pw" type="password" placeholder="Admin password" />
+      <button onclick="login()">Login</button>
+    </div>
+
+    <!-- ADD HWID -->
+    <div class="card">
+      <h3>Add HWID</h3>
+      <input id="usernameInput" placeholder="Username" />
+      <input id="hwidInput" placeholder="HWID" />
+      <button class="btn-add" onclick="addHWID()">Add</button>
+      <button class="btn-refresh" onclick="loadAll()">Refresh</button>
+    </div>
+
+    <!-- LOGS -->
+    <div class="card">
+      <h3>Admin Logs</h3>
+      <button class="btn-revoke" onclick="clearLogs()">Clear Logs</button>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Action</th>
+            <th>Details</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="logs"></tbody>
+      </table>
+    </div>
+
+    <!-- HWIDS -->
+    <div class="card">
+      <h3>HWIDs</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Last Seen</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="hwids"></tbody>
+      </table>
+    </div>
+
   </div>
 
-  <!-- ADD HWID -->
-  <div class="card">
-    <h3>Add HWID</h3>
+  <!-- RIGHT SIDE -->
+  <div class="sidebar">
 
-    <input id="usernameInput" placeholder="Username" />
-    <input id="hwidInput" placeholder="HWID" />
+    <div class="card">
+      <h3>Online Users</h3>
+      <button class="btn-refresh" onclick="loadOnline()">Refresh</button>
 
-    <button class="btn-add" onclick="addHWID()">Add</button>
-    <button class="btn-refresh" onclick="loadAll()">Refresh</button>
-  </div>
+      <table>
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>HWID</th>
+            <th>Last Seen</th>
+          </tr>
+        </thead>
+        <tbody id="online"></tbody>
+      </table>
+    </div>
 
-  <!-- LOGS -->
-  <div class="card">
-    <h3>Admin Logs</h3>
-    <button class="btn-revoke" onclick="clearLogs()">Clear Logs</button>
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Action</th>
-          <th>Details</th>
-          <th>Time</th>
-        </tr>
-      </thead>
-      <tbody id="logs"></tbody>
-    </table>
-  </div>
-
-  <!-- USERS -->
-  <div class="card">
-    <h3>HWIDs</h3>
-
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>User</th>
-          <th>Status</th>
-          <th>Created</th>
-          <th>Last Seen</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="hwids"></tbody>
-    </table>
   </div>
 
 </div>
@@ -148,6 +204,32 @@ function requireLogin() {
 /* ======================
    LOGIN
 ====================== */
+
+async function loadOnline() {
+  requireLogin();
+
+  const res = await fetch("/admin/online-users", {
+    headers: authHeaders()
+  });
+
+  const data = await res.json();
+
+  const tbody = document.getElementById("online");
+  tbody.innerHTML = "";
+
+  if (!data.success) return;
+
+  data.online.forEach(u => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${u.username || "unknown"}</td>
+        <td><code>${u.hwid}</code></td>
+        <td>${u.last_seen}</td>
+      </tr>
+    `;
+  });
+}
+
 async function login() {
   const password = document.getElementById("pw").value;
 
@@ -314,6 +396,12 @@ async function enableHWID(hwid) {
 
   loadHWIDs();
 }
+
+setInterval(() => {
+  if (localStorage.getItem(TOKEN_KEY)) {
+    loadOnline();
+  }
+}, 3000);
 
 /* ======================
    AUTO LOAD IF LOGGED IN

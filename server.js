@@ -89,6 +89,26 @@ app.post("/auth/check", async (req, res) => {
   }
 });
 
+app.get("/admin/online-users", requireAdmin, async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT hwid, username, last_seen
+      FROM users
+      WHERE last_seen > NOW() - INTERVAL '20 seconds'
+      ORDER BY last_seen DESC
+    `);
+
+    res.json({
+      success: true,
+      online: result.rows
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed" });
+  }
+});
+
 
 /* ======================================================
    ADMIN ROUTES
