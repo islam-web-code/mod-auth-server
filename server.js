@@ -214,15 +214,36 @@ app.post("/admin/enable-hwid", requireAdmin, async (req, res) => {
 });
 
 app.get("/admin/list-hwids", requireAdmin, async (req, res) => {
-
   try {
-    const result = await db.query(
-      "SELECT id, hwid, username, access_enabled, created_at, last_seen FROM users ORDER BY id DESC"
-    );
+    const result = await db.query(`
+      SELECT id, username, hwid, access_enabled, created_at, last_seen
+      FROM users
+      ORDER BY id DESC
+    `);
 
-    res.json({ success: true, users: result.rows });
-  } catch {
-    sendError(res, "Fetch failed");
+    const users = result.rows.map(u => {
+      const lastSeen = u.last_seen ? new Date(u.last_seen) : null;
+      const now = new Date();
+
+      // online if seen within 20 seconds
+      const isOnline =
+        lastSeen && (now - lastSeen < 20 * 1000);
+
+      return {
+        id: u.id,
+        username: u.username,
+        status: isOnline ? "Online" : "Offline",
+        access_enabled: u.access_enabled,
+        created_at: u.created_at,
+        last_seen: u.last_seen
+      };
+    });
+
+    res.json({ success: true, users });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Fetch failed" });
   }
 });
 

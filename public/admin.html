@@ -166,7 +166,7 @@
         <thead>
           <tr>
             <th>User</th>
-            <th>HWID</th>
+            <th>Status</th>
             <th>Last Seen</th>
           </tr>
         </thead>
@@ -219,15 +219,21 @@ async function loadOnline() {
 
   if (!data.success) return;
 
-  data.online.forEach(u => {
-    tbody.innerHTML += `
-      <tr>
-        <td>${u.username || "unknown"}</td>
-        <td><code>${u.hwid}</code></td>
-        <td>${u.last_seen}</td>
-      </tr>
-    `;
-  });
+  data.users.forEach(u => {
+  const isOnline = u.status === "Online";
+
+  tbody.innerHTML += `
+    <tr>
+      <td>${u.username || "unknown"}</td>
+
+      <td style="color:${isOnline ? "#22c55e" : "#ef4444"}; font-weight:bold;">
+        ${u.status}
+      </td>
+
+      <td>${u.last_seen || "never"}</td>
+    </tr>
+  `;
+});
 }
 
 async function login() {
