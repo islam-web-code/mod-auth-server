@@ -4,7 +4,7 @@ const db = require("./db");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const ADMIN_PASSWORD = "1234";
+const ADMIN_PASSWORD = "itsbig";
 
 app.use(express.json());
 app.use(express.static("public"));
